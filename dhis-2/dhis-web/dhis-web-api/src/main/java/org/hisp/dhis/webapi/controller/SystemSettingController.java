@@ -28,6 +28,17 @@ package org.hisp.dhis.webapi.controller;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang.StringUtils;
 import org.hisp.dhis.common.DhisApiVersion;
 import org.hisp.dhis.dxf2.webmessage.WebMessageException;
@@ -44,23 +55,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author Lars Helge Overland
@@ -79,9 +74,12 @@ public class SystemSettingController
     @Autowired
     private WebMessageService webMessageService;
 
-    @RequestMapping( value = "/{key}", method = RequestMethod.POST, consumes = { ContextUtils.CONTENT_TYPE_TEXT, ContextUtils.CONTENT_TYPE_HTML } )
+    @RequestMapping( value = "/{key}", method = RequestMethod.POST, consumes = { ContextUtils.CONTENT_TYPE_TEXT,
+        ContextUtils.CONTENT_TYPE_HTML } )
     @PreAuthorize( "hasRole('ALL') or hasRole('F_SYSTEM_SETTING')" )
-    public void setSystemSettingV29( @PathVariable( value = "key" ) String key, @RequestParam( value = "value", required = false ) String value,
+    public void setSystemSettingV29( @PathVariable( value = "key" ) String key,
+        @RequestParam( value = "value", required = false ) String value,
+        @RequestParam( value = "locale", required = false ) String locale,
         @RequestBody( required = false ) String valuePayload, HttpServletResponse response, HttpServletRequest request )
         throws WebMessageException
     {
@@ -92,7 +90,8 @@ public class SystemSettingController
 
         if ( value == null && valuePayload == null )
         {
-            throw new WebMessageException( WebMessageUtils.conflict( "Value must be specified as query param or as payload" ) );
+            throw new WebMessageException(
+                WebMessageUtils.conflict( "Value must be specified as query param or as payload" ) );
         }
 
         value = ObjectUtils.firstNonNull( value, valuePayload );
@@ -108,19 +107,24 @@ public class SystemSettingController
 
         systemSettingManager.saveSystemSetting( setting.get(), valueObject );
 
-        webMessageService.send( WebMessageUtils.ok( "System setting '" + key + "' set to value '" + valueObject + "'." ), response, request );
+        webMessageService.send(
+            WebMessageUtils.ok( "System setting '" + key + "' set to value '" + valueObject + "'." ), response,
+            request );
     }
 
     @RequestMapping( method = RequestMethod.POST, consumes = { ContextUtils.CONTENT_TYPE_JSON } )
     @PreAuthorize( "hasRole('ALL') or hasRole('F_SYSTEM_SETTING')" )
-    public void setSystemSettingV29( @RequestBody Map<String, Object> settings, HttpServletResponse response, HttpServletRequest request )
+    public void setSystemSettingV29( @RequestParam( value = "locale", required = false ) String locale,
+        @RequestBody Map<String, Object> settings, HttpServletResponse response, HttpServletRequest request )
         throws WebMessageException
     {
-        List<String> invalidKeys = settings.keySet().stream().filter( ( key ) -> !SettingKey.getByName( key ).isPresent() ).collect( Collectors.toList() );
+        List<String> invalidKeys = settings.keySet().stream()
+            .filter( ( key ) -> !SettingKey.getByName( key ).isPresent() ).collect( Collectors.toList() );
 
         if ( invalidKeys.size() > 0 )
         {
-            throw new WebMessageException( WebMessageUtils.conflict( "Key(s) is not supported: " + StringUtils.join( invalidKeys, ", " ) ) );
+            throw new WebMessageException(
+                WebMessageUtils.conflict( "Key(s) is not supported: " + StringUtils.join( invalidKeys, ", " ) ) );
         }
 
         for ( String key : settings.keySet() )
@@ -133,7 +137,8 @@ public class SystemSettingController
     }
 
     @RequestMapping( value = "/{key}", method = RequestMethod.GET, produces = ContextUtils.CONTENT_TYPE_TEXT )
-    public @ResponseBody String getSystemSettingAsText( @PathVariable( "key" ) String key )
+    public @ResponseBody String getSystemSettingAsText( @PathVariable( "key" ) String key,
+        @RequestParam( value = "locale", required = false ) String locale )
     {
         if ( systemSettingManager.isConfidential( key ) )
         {
@@ -158,18 +163,13 @@ public class SystemSettingController
         }
     }
 
-    @RequestMapping( method = RequestMethod.GET, produces = { ContextUtils.CONTENT_TYPE_JSON, ContextUtils.CONTENT_TYPE_HTML } )
-    public void getSystemSettingsJson( @RequestParam( value = "key", required = false ) Set<String> keys, HttpServletResponse response )
-        throws IOException, WebMessageException
+    @RequestMapping( method = RequestMethod.GET, produces = { ContextUtils.CONTENT_TYPE_JSON,
+        ContextUtils.CONTENT_TYPE_HTML } )
+    public void getSystemSettingsJson( @RequestParam( value = "key", required = false ) Set<String> keys,
+        @RequestParam( value = "locale", required = false ) String locale, HttpServletResponse response )
+        throws IOException
     {
-        Set<SettingKey> settingKeys = null;
-
-        if ( keys != null )
-        {
-            keys.removeIf( systemSettingManager::isConfidential );
-            settingKeys = keys.stream().map( key -> SettingKey.getByName( key ) ).filter( settingKeyOpt -> settingKeyOpt.isPresent() )
-                .map( settingKeyOpt -> settingKeyOpt.get() ).collect( Collectors.toSet() );
-        }
+        Set<SettingKey> settingKeys = getSettingKeys( keys );
 
         response.setContentType( MediaType.APPLICATION_JSON_VALUE );
         renderService.toJson( response.getOutputStream(), getSystemSettings( settingKeys ) );
@@ -180,17 +180,24 @@ public class SystemSettingController
         @RequestParam( defaultValue = "callback" ) String callback, HttpServletResponse response )
         throws IOException
     {
+        Set<SettingKey> settingKeys = getSettingKeys( keys );
+
+        response.setContentType( "application/javascript" );
+        renderService.toJsonP( response.getOutputStream(), getSystemSettings( settingKeys ), callback );
+    }
+
+    private Set<SettingKey> getSettingKeys( Set<String> keys )
+    {
         Set<SettingKey> settingKeys = null;
 
         if ( keys != null )
         {
             keys.removeIf( systemSettingManager::isConfidential );
-            settingKeys = keys.stream().map( key -> SettingKey.getByName( key ) ).filter( settingKeyOpt -> settingKeyOpt.isPresent() )
-                .map( settingKeyOpt -> settingKeyOpt.get() ).collect( Collectors.toSet() );
+            settingKeys = keys.stream().filter( s -> !systemSettingManager.isConfidential( s ) )
+                .map( SettingKey::getByName ).filter( Optional::isPresent ).map( Optional::get )
+                .collect( Collectors.toSet() );
         }
-
-        response.setContentType( "application/javascript" );
-        renderService.toJsonP( response.getOutputStream(), getSystemSettings( settingKeys ), callback );
+        return settingKeys;
     }
 
     private Map<String, Serializable> getSystemSettings( Set<SettingKey> keys )

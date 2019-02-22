@@ -30,12 +30,13 @@ package org.hisp.dhis.setting;
 
 import java.io.Serializable;
 
+import org.hisp.dhis.common.BaseIdentifiableObject;
+
 /**
- * TODO make IdentifiableObject
- * 
+ *
  * @author Stian Strandli
  */
-public class SystemSetting
+public class SystemSetting extends BaseIdentifiableObject
     implements Serializable
 {
     private int id;
