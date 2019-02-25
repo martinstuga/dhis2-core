@@ -391,9 +391,7 @@ public abstract class AbstractJdbcTableManager
 
         Collections.sort( dataYears );
 
-        String baseName = getAnalyticsTableType().getTableName();
-
-        AnalyticsTable table = new AnalyticsTable( baseName, dimensionColumns, valueColumns );
+        AnalyticsTable table = new AnalyticsTable( getAnalyticsTableType(), dimensionColumns, valueColumns );
 
         for ( Integer year : dataYears )
         {
@@ -478,7 +476,7 @@ public abstract class AbstractJdbcTableManager
     private void swapTable( String tempTableName, String realTableName )
     {
         final String sql =
-            "drop table if exists " + realTableName + ";" +
+            "drop table if exists " + realTableName + " cascade; " +
             "alter table " + tempTableName + " rename to " + realTableName + ";";
 
         executeSilently( sql );

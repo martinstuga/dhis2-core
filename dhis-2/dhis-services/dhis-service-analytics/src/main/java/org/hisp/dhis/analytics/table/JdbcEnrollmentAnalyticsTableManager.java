@@ -85,11 +85,9 @@ public class JdbcEnrollmentAnalyticsTableManager
         List<AnalyticsTable> tables = new UniqueArrayList<>();
         List<Program> programs = idObjectManager.getAllNoAcl( Program.class );
 
-        String baseName = getTableName();
-
         for ( Program program : programs )
         {
-            AnalyticsTable table = new AnalyticsTable( baseName, getDimensionColumns( program ), Lists.newArrayList(), program );
+            AnalyticsTable table = new AnalyticsTable( getAnalyticsTableType(), getDimensionColumns( program ), Lists.newArrayList(), program );
 
             tables.add( table );
         }
@@ -100,7 +98,7 @@ public class JdbcEnrollmentAnalyticsTableManager
     @Override
     public Set<String> getExistingDatabaseTables()
     {
-        return new HashSet<>();
+        return new HashSet<>(); //TODO this must be implemented properly
     }
 
     @Override
@@ -199,23 +197,6 @@ public class JdbcEnrollmentAnalyticsTableManager
         columns.add( new AnalyticsTableColumn( quote( "pi" ), CHARACTER_11, NOT_NULL, "pi.uid" ) );
         columns.add( new AnalyticsTableColumn( quote( "enrollmentdate" ), TIMESTAMP, "pi.enrollmentdate" ) );
         columns.add( new AnalyticsTableColumn( quote( "incidentdate" ), TIMESTAMP, "pi.incidentdate" ) );
-
-        final String executionDateSql = "(select psi.executionDate from programstageinstance psi " +
-            "where psi.programinstanceid=pi.programinstanceid " +
-            "and psi.executiondate is not null " +
-            "and psi.deleted is false " +
-            "order by psi.executiondate desc " +
-            "limit 1) as " + quote( "executiondate" );
-        columns.add( new AnalyticsTableColumn( quote( "executiondate" ), TIMESTAMP, executionDateSql ) );
-
-        final String dueDateSql = "(select psi.duedate from programstageinstance psi " +
-            "where psi.programinstanceid = pi.programinstanceid " +
-            "and psi.duedate is not null " +
-            "and psi.deleted is false " +
-            "order by psi.duedate desc " +
-            "limit 1) as " + quote( "duedate" );
-        columns.add( new AnalyticsTableColumn( quote( "duedate" ), TIMESTAMP, dueDateSql ) );
-
         columns.add( new AnalyticsTableColumn( quote( "completeddate" ), TIMESTAMP, "case pi.status when 'COMPLETED' then pi.enddate end" ) );
         columns.add( new AnalyticsTableColumn( quote( "enrollmentstatus" ), CHARACTER_50, "pi.status" ) );
         columns.add( new AnalyticsTableColumn( quote( "longitude" ), DOUBLE, "ST_X(pi.geometry)" ) );
