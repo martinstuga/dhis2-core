@@ -28,13 +28,13 @@ package org.hisp.dhis.setting;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.hisp.dhis.common.GenericStore;
+import org.hisp.dhis.common.IdentifiableObjectStore;
 
 /**
  * @author Lars Helge Overland
  */
 public interface SystemSettingStore
-    extends GenericStore<SystemSetting>
+    extends IdentifiableObjectStore<SystemSetting>
 {
     SystemSetting getByName( String name );
 }

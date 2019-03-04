@@ -1,0 +1,1 @@
+update systemsetting ss set translations = (select to_jsonb(array_agg(jsonb_build_object('locale',locale,'property', property,'value', value ))) from objecttranslation ot inner join charttranslations t on ot.objecttranslationid = t.objecttranslationid  where t.chartid = o.chartid );

@@ -38,6 +38,8 @@ import java.util.Map;
  */
 public interface SystemSettingManager
 {
+    void saveSystemSetting( SettingKey settingKey, Serializable value, String locale );
+
     void saveSystemSetting( SettingKey setting, Serializable value );
 
     void deleteSystemSetting( SettingKey setting );

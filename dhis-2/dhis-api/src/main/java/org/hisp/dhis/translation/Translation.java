@@ -29,14 +29,15 @@ package org.hisp.dhis.translation;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.io.Serializable;
+import java.util.Objects;
+
+import org.hisp.dhis.common.DxfNamespaces;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.google.common.base.MoreObjects;
-import org.hisp.dhis.common.DxfNamespaces;
-
-import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * @author Viet Nguyen <viet@dhis2.org>
@@ -64,7 +65,7 @@ public class Translation implements Serializable
     @Override
     public int hashCode()
     {
-        return Objects.hash( locale, property, value );
+        return Objects.hash( locale, property );
     }
 
     @Override
@@ -83,8 +84,7 @@ public class Translation implements Serializable
         final Translation other = (Translation) obj;
 
         return Objects.equals( this.locale, other.locale )
-            && Objects.equals( this.property, other.property )
-            && Objects.equals( this.value, other.value );
+            && Objects.equals( this.property, other.property );
     }
 
     /**

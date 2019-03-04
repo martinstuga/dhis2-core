@@ -29,12 +29,7 @@ package org.hisp.dhis.setting;
  */
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -44,18 +39,22 @@ import javax.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hisp.dhis.cache.Cache;
 import org.hisp.dhis.cache.CacheProvider;
+import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.commons.util.SystemUtils;
 import org.hisp.dhis.system.util.ValidationUtils;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.core.env.Environment;
+
 import com.google.common.collect.Lists;
 
 /**
@@ -98,6 +97,12 @@ public class DefaultSystemSettingManager
     @Autowired
     private Environment environment;
 
+    @Autowired
+    private SessionFactory sessionFactory;
+
+    @Autowired
+    private IdentifiableObjectManager idObjectManager;
+
     public void setSystemSettingStore( SystemSettingStore systemSettingStore )
     {
         this.systemSettingStore = systemSettingStore;
@@ -128,7 +133,7 @@ public class DefaultSystemSettingManager
 
     @Override
     @Transactional
-    public void saveSystemSetting( SettingKey settingKey, Serializable value )
+    public void saveSystemSetting( SettingKey settingKey, Serializable value, String locale )
     {
         settingCache.invalidate( settingKey.getName() );
 
@@ -154,6 +159,23 @@ public class DefaultSystemSettingManager
 
             systemSettingStore.update( setting );
         }
+
+        if(StringUtils.isNotEmpty( locale ))
+        {
+            Session session = sessionFactory.getCurrentSession();
+
+            session.flush();
+            session.refresh( setting );
+
+            idObjectManager.updateTranslations( setting, null );
+        }
+    }
+
+    @Override
+    @Transactional
+    public void saveSystemSetting( SettingKey settingKey, Serializable value )
+    {
+       saveSystemSetting( settingKey, value, null );
     }
 
     @Override

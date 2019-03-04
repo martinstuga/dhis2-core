@@ -18,5 +18,11 @@
 
     <property name="value" type="serializable" length="65535" />
 
+    <property name="translations" type="jblTranslations"/>
+
+    <property name="lastUpdated" column="lastupdated" type="timestamp"/>
+
+    <property name="lastUpdatedBy" column="lastupdatedby" />
+
   </class>
 </hibernate-mapping>

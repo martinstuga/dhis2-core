@@ -28,24 +28,18 @@ package org.hisp.dhis.setting.hibernate;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.hisp.dhis.hibernate.HibernateGenericStore;
+import org.hisp.dhis.common.hibernate.HibernateIdentifiableObjectStore;
 import org.hisp.dhis.setting.SystemSetting;
 import org.hisp.dhis.setting.SystemSettingStore;
-
-import javax.persistence.criteria.CriteriaBuilder;
 
 /**
  * @author Lars Helge Overland
  */
 public class HibernateSystemSettingStore
-    extends HibernateGenericStore<SystemSetting> implements SystemSettingStore
+    extends
+    HibernateIdentifiableObjectStore<SystemSetting>
+    implements
+    SystemSettingStore
 {
-    @Override
-    public SystemSetting getByName( String name )
-    {
-        CriteriaBuilder builder = getCriteriaBuilder();
 
-        return getSingleResult( builder, newJpaParameters()
-            .addPredicate( root -> builder.equal( root.get( "name" ), name ) ));
-    }
 }

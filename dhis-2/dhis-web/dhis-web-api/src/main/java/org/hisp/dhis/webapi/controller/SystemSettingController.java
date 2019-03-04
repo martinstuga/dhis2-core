@@ -105,7 +105,7 @@ public class SystemSettingController
 
         Serializable valueObject = SettingKey.getAsRealClass( key, value );
 
-        systemSettingManager.saveSystemSetting( setting.get(), valueObject );
+        systemSettingManager.saveSystemSetting( setting.get(), valueObject, locale );
 
         webMessageService.send(
             WebMessageUtils.ok( "System setting '" + key + "' set to value '" + valueObject + "'." ), response,
