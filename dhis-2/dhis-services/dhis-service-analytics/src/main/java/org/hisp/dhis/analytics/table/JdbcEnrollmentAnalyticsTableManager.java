@@ -40,8 +40,6 @@ import static org.hisp.dhis.api.util.DateUtils.getLongDateString;
 import static org.hisp.dhis.system.util.MathUtils.NUMERIC_LENIENT_REGEXP;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -80,7 +78,7 @@ public class JdbcEnrollmentAnalyticsTableManager
 
     @Override
     @Transactional
-    public List<AnalyticsTable> getAnalyticsTables( Date earliest )
+    public List<AnalyticsTable> getAnalyticsTables( AnalyticsTableUpdateParams params )
     {
         List<AnalyticsTable> tables = new UniqueArrayList<>();
         List<Program> programs = idObjectManager.getAllNoAcl( Program.class );
@@ -93,12 +91,6 @@ public class JdbcEnrollmentAnalyticsTableManager
         }
 
         return tables;
-    }
-
-    @Override
-    public Set<String> getExistingDatabaseTables()
-    {
-        return new HashSet<>(); //TODO this must be implemented properly
     }
 
     @Override
