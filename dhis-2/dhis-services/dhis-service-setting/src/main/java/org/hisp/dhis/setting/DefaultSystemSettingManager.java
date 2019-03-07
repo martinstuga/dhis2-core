@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -46,6 +47,8 @@ import org.hisp.dhis.cache.CacheProvider;
 import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.commons.util.SystemUtils;
 import org.hisp.dhis.system.util.ValidationUtils;
+import org.hisp.dhis.translation.Translation;
+import org.hisp.dhis.translation.TranslationProperty;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +69,8 @@ import com.google.common.collect.Lists;
  * @author Lars Helge Overland
  */
 public class DefaultSystemSettingManager
-    implements SystemSettingManager
+    implements
+    SystemSettingManager
 {
 
     // -------------------------------------------------------------------------
@@ -82,8 +86,8 @@ public class DefaultSystemSettingManager
      */
     private Cache<Serializable> settingCache;
 
-    private static final Map<String, SettingKey> NAME_KEY_MAP = Lists.newArrayList(
-        SettingKey.values() ).stream().collect( Collectors.toMap( SettingKey::getName, e -> e ) );
+    private static final Map<String, SettingKey> NAME_KEY_MAP = Lists.newArrayList( SettingKey.values() ).stream()
+        .collect( Collectors.toMap( SettingKey::getName, e -> e ) );
 
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -160,14 +164,19 @@ public class DefaultSystemSettingManager
             systemSettingStore.update( setting );
         }
 
-        if(StringUtils.isNotEmpty( locale ))
+        if ( StringUtils.isNotEmpty( locale ) )
         {
             Session session = sessionFactory.getCurrentSession();
 
             session.flush();
             session.refresh( setting );
 
-            idObjectManager.updateTranslations( setting, null );
+            Translation translation = new Translation( locale, TranslationProperty.DESCRIPTION, value.toString() );
+
+            final Set<Translation> translations = new HashSet<>( setting.getTranslations());
+            translations.add( translation );
+
+            idObjectManager.updateTranslations( setting, translations );
         }
     }
 
@@ -175,7 +184,7 @@ public class DefaultSystemSettingManager
     @Transactional
     public void saveSystemSetting( SettingKey settingKey, Serializable value )
     {
-       saveSystemSetting( settingKey, value, null );
+        saveSystemSetting( settingKey, value, null );
     }
 
     @Override
@@ -393,8 +402,7 @@ public class DefaultSystemSettingManager
     @Override
     public boolean emailConfigured()
     {
-        return StringUtils.isNotBlank( getEmailHostName() )
-            && StringUtils.isNotBlank( getEmailUsername() );
+        return StringUtils.isNotBlank( getEmailHostName() ) && StringUtils.isNotBlank( getEmailUsername() );
     }
 
     @Override

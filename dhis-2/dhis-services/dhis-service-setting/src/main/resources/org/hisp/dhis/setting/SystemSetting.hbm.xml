@@ -22,7 +22,7 @@
 
     <property name="lastUpdated" column="lastupdated" type="timestamp"/>
 
-    <property name="lastUpdatedBy" column="lastupdatedby" />
+    <many-to-one name="lastUpdatedBy" class="org.hisp.dhis.user.User" column="lastupdatedby" foreign-key="fk_lastupdateby_userid" />
 
   </class>
 </hibernate-mapping>
