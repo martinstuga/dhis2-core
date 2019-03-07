@@ -228,7 +228,7 @@ public class DefaultIdentifiableObjectManager
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <T extends IdentifiableObject> T get( Class<T> clazz, int id )
+    public <T extends IdentifiableObject> T get( Class<T> clazz, long id )
     {
         IdentifiableObjectStore<IdentifiableObject> store = getIdentifiableObjectStore( clazz );
 
@@ -490,7 +490,7 @@ public class DefaultIdentifiableObjectManager
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <T extends IdentifiableObject> List<T> getById( Class<T> clazz, Collection<Integer> ids )
+    public <T extends IdentifiableObject> List<T> getById( Class<T> clazz, Collection<Long> ids )
     {
         IdentifiableObjectStore<IdentifiableObject> store = getIdentifiableObjectStore( clazz );
 
@@ -721,7 +721,7 @@ public class DefaultIdentifiableObjectManager
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <T extends IdentifiableObject> List<T> getObjects( Class<T> clazz, Collection<Integer> identifiers )
+    public <T extends IdentifiableObject> List<T> getObjects( Class<T> clazz, Collection<Long> identifiers )
     {
         IdentifiableObjectStore<T> store = (IdentifiableObjectStore<T>) getIdentifiableObjectStore( clazz );
 
@@ -798,7 +798,7 @@ public class DefaultIdentifiableObjectManager
     }
 
     @Override
-    public IdentifiableObject getObject( int id, String simpleClassName )
+    public IdentifiableObject getObject( long id, String simpleClassName )
     {
         for ( IdentifiableObjectStore<? extends IdentifiableObject> objectStore : identifiableObjectStores )
         {
