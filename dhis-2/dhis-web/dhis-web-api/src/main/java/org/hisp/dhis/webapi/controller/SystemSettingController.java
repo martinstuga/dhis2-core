@@ -130,7 +130,7 @@ public class SystemSettingController
         for ( String key : settings.keySet() )
         {
             Serializable valueObject = SettingKey.getAsRealClass( key, settings.get( key ).toString() );
-            systemSettingManager.saveSystemSetting( SettingKey.getByName( key ).get(), valueObject );
+            systemSettingManager.saveSystemSetting( SettingKey.getByName( key ).get(), valueObject, locale );
         }
 
         webMessageService.send( WebMessageUtils.ok( "System settings imported" ), response, request );
@@ -152,7 +152,7 @@ public class SystemSettingController
 
             if ( settingKey.isPresent() )
             {
-                setting = systemSettingManager.getSystemSetting( settingKey.get() );
+                setting = systemSettingManager.getSystemSetting( settingKey.get(), locale );
             }
             else
             {
@@ -172,18 +172,19 @@ public class SystemSettingController
         Set<SettingKey> settingKeys = getSettingKeys( keys );
 
         response.setContentType( MediaType.APPLICATION_JSON_VALUE );
-        renderService.toJson( response.getOutputStream(), getSystemSettings( settingKeys ) );
+        renderService.toJson( response.getOutputStream(), getSystemSettings( settingKeys, locale ) );
     }
 
     @RequestMapping( method = RequestMethod.GET, produces = "application/javascript" )
     public void getSystemSettingsJsonP( @RequestParam( value = "key", required = false ) Set<String> keys,
-        @RequestParam( defaultValue = "callback" ) String callback, HttpServletResponse response )
+        @RequestParam( defaultValue = "callback" ) String callback,
+        @RequestParam( value = "locale", required = false ) String locale, HttpServletResponse response )
         throws IOException
     {
         Set<SettingKey> settingKeys = getSettingKeys( keys );
 
         response.setContentType( "application/javascript" );
-        renderService.toJsonP( response.getOutputStream(), getSystemSettings( settingKeys ), callback );
+        renderService.toJsonP( response.getOutputStream(), getSystemSettings( settingKeys, locale ), callback );
     }
 
     private Set<SettingKey> getSettingKeys( Set<String> keys )
@@ -200,16 +201,16 @@ public class SystemSettingController
         return settingKeys;
     }
 
-    private Map<String, Serializable> getSystemSettings( Set<SettingKey> keys )
+    private Map<String, Serializable> getSystemSettings( Set<SettingKey> keys, String locale )
     {
         Map<String, Serializable> value;
         if ( keys != null && !keys.isEmpty() )
         {
-            value = systemSettingManager.getSystemSettings( keys );
+            value = systemSettingManager.getSystemSettings( keys, locale );
         }
         else
         {
-            value = systemSettingManager.getSystemSettingsAsMap();
+            value = systemSettingManager.getSystemSettingsAsMap( locale );
         }
 
         return value;

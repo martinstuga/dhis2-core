@@ -46,7 +46,11 @@ public interface SystemSettingManager
 
     Serializable getSystemSetting( SettingKey setting );
 
+    Serializable getSystemSetting( SettingKey setting, String locale );
+
     Serializable getSystemSetting( SettingKey setting, Serializable defaultValue );
+
+    Serializable getSystemSetting( SettingKey setting, Serializable defaultValue, String locale );
 
     List<SystemSetting> getAllSystemSettings();
 
@@ -57,7 +61,14 @@ public interface SystemSettingManager
      */
     Map<String, Serializable> getSystemSettingsAsMap();
 
-    Map<String, Serializable> getSystemSettings( Collection<SettingKey> settings );
+    /**
+     * Returns all system settings as a mapping between the setting name and the
+     * value. Includes system settings which have a default value but no explicitly
+     * set value.
+     */
+    Map<String, Serializable> getSystemSettingsAsMap(String locale);
+
+    Map<String, Serializable> getSystemSettings( Collection<SettingKey> settings, String locale );
 
     void invalidateCache();
 

@@ -113,7 +113,8 @@ public class SystemSettingManagerTest
     public void testGetSystemSettingsAsMap()
     {
         systemSettingManager.saveSystemSetting( SettingKey.APP_STORE_URL, "valueA" );
-        systemSettingManager.saveSystemSetting( SettingKey.APPLICATION_TITLE, "valueB" );
+        systemSettingManager.saveSystemSetting( SettingKey.APPLICATION_TITLE, "valueB", "en" );
+        systemSettingManager.saveSystemSetting( SettingKey.APPLICATION_TITLE, "valueB_PT", "pt" );
         systemSettingManager.saveSystemSetting( SettingKey.APPLICATION_NOTIFICATION, "valueC" );
 
         Map<String, Serializable> settingsMap = systemSettingManager.getSystemSettingsAsMap();
@@ -136,10 +137,10 @@ public class SystemSettingManagerTest
             .of( SettingKey.APP_STORE_URL, SettingKey.APPLICATION_TITLE, SettingKey.APPLICATION_INTRO );
 
         systemSettingManager.saveSystemSetting( APP_STORE_URL, "valueA" );
-        systemSettingManager.saveSystemSetting( APPLICATION_TITLE, "valueB" );
+        systemSettingManager.saveSystemSetting( APPLICATION_TITLE, "valueB", "en" );
         systemSettingManager.saveSystemSetting( APPLICATION_INTRO, "valueC" );
 
-        assertEquals( systemSettingManager.getSystemSettings( keys ).size(), 3);
+        assertEquals( systemSettingManager.getSystemSettings( keys, "en" ).size(), 3);
     }
 
     @Test

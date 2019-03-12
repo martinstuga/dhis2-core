@@ -29,8 +29,12 @@ package org.hisp.dhis.setting;
  */
 
 import java.io.Serializable;
+import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hisp.dhis.common.BaseIdentifiableObject;
+import org.hisp.dhis.translation.Translation;
+import org.hisp.dhis.translation.TranslationProperty;
 
 /**
  *
@@ -96,6 +100,18 @@ public class SystemSetting extends BaseIdentifiableObject
         this.value = value;
     }
 
+
+    public String getTranslation(String locale) {
+        Optional<Translation> translation = getTranslations().stream().filter(
+            t -> StringUtils.equals( t.getLocale(), locale ) &&
+                t.getProperty().equals( TranslationProperty.DESCRIPTION ) ).findFirst();
+
+        if(translation.isPresent()) {
+            return translation.get().getValue();
+        }
+
+        return "";
+    }
     // -------------------------------------------------------------------------
     // hashCode and equals
     // -------------------------------------------------------------------------

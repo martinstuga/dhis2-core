@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -49,13 +48,12 @@ import org.hisp.dhis.commons.util.SystemUtils;
 import org.hisp.dhis.system.util.ValidationUtils;
 import org.hisp.dhis.translation.Translation;
 import org.hisp.dhis.translation.TranslationProperty;
+import org.hisp.dhis.user.CurrentUserService;
 import org.jasypt.encryption.pbe.PBEStringEncryptor;
 import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.common.collect.Lists;
@@ -106,6 +104,9 @@ public class DefaultSystemSettingManager
 
     @Autowired
     private IdentifiableObjectManager idObjectManager;
+
+    @Autowired
+    private CurrentUserService currentUserService;
 
     public void setSystemSettingStore( SystemSettingStore systemSettingStore )
     {
@@ -208,8 +209,28 @@ public class DefaultSystemSettingManager
     @Override
     public Serializable getSystemSetting( SettingKey setting )
     {
+        return getSystemSetting( setting, getCurrentUserLocale() );
+    }
+
+    private String getCurrentUserLocale()
+    {
+        if ( currentUserService.getCurrentUser() == null )
+        {
+            return null;
+        }
+
+        return currentUserService.getCurrentUser().getLanguages();
+    }
+
+    /**
+     * No transaction for this method, transaction is initiated in
+     * {@link #getSystemSettingOptional} on cache miss.
+     */
+    @Override
+    public Serializable getSystemSetting( SettingKey setting, final String locale )
+    {
         Optional<Serializable> value = settingCache.get( setting.getName(),
-            key -> getSystemSettingOptional( key, setting.getDefaultValue() ).orElse( null ) );
+            key -> getSystemSettingOptional( key, setting.getDefaultValue(), locale).orElse( null ) );
 
         return value.orElse( null );
     }
@@ -221,7 +242,18 @@ public class DefaultSystemSettingManager
     @Override
     public Serializable getSystemSetting( SettingKey setting, Serializable defaultValue )
     {
-        return getSystemSettingOptional( setting.getName(), defaultValue ).orElse( null );
+        return getSystemSetting( setting, defaultValue, getCurrentUserLocale() );
+    }
+
+    /**
+     * No transaction for this method, transaction is initiated in
+     * {@link #getSystemSettingOptional}.
+     */
+    @Override
+    public Serializable getSystemSetting( SettingKey setting, Serializable defaultValue, String locale )
+    {
+        return getSystemSettingOptional( setting.getName(), defaultValue,
+            locale ).orElse( null );
     }
 
     /**
@@ -230,42 +262,46 @@ public class DefaultSystemSettingManager
      *
      * @param name the system setting name.
      * @param defaultValue the default value for the system setting.
+     * @param locale
      * @return an optional system setting value.
      */
-    private Optional<Serializable> getSystemSettingOptional( String name, Serializable defaultValue )
+    private Optional<Serializable> getSystemSettingOptional( String name, Serializable defaultValue, String locale )
     {
-        SystemSetting setting = transactionTemplate.execute( new TransactionCallback<SystemSetting>()
-        {
-            @Override
-            public SystemSetting doInTransaction( TransactionStatus status )
-            {
-                return systemSettingStore.getByName( name );
-            }
-        } );
+        SystemSetting setting = transactionTemplate.execute( status -> systemSettingStore.getByName( name ) );
 
-        if ( setting != null && setting.hasValue() )
+        if ( setting != null )
         {
-            if ( isConfidential( name ) )
+            if(setting.hasValue())
             {
-                try
+                    if ( isConfidential( name ) )
+                    {
+                        try
+                        {
+                            return Optional.of( pbeStringEncryptor.decrypt( (String) setting.getValue() ) );
+                        }
+                        catch ( EncryptionOperationNotPossibleException e ) // Most likely this means the value is not encrypted, or not existing
+                        {
+                            log.warn( "Could not decrypt system setting '" + name + "'" );
+                            return Optional.empty();
+                        }
+                    }
+                    else
+                    {
+                        return Optional.of( setting.getValue() );
+                    }
+            }
+            else if( !StringUtils.isEmpty( locale ) )
+            {
+                String translationValue = setting.getTranslation( locale );
+
+                if ( StringUtils.isNotEmpty(translationValue) )
                 {
-                    return Optional.of( pbeStringEncryptor.decrypt( (String) setting.getValue() ) );
-                }
-                catch ( EncryptionOperationNotPossibleException e ) // Most likely this means the value is not encrypted, or not existing
-                {
-                    log.warn( "Could not decrypt system setting '" + name + "'" );
-                    return Optional.empty();
+                    return Optional.of( translationValue );
                 }
             }
-            else
-            {
-                return Optional.of( setting.getValue() );
-            }
         }
-        else
-        {
-            return Optional.ofNullable( defaultValue );
-        }
+
+        return Optional.ofNullable( defaultValue );
     }
 
     @Override
@@ -277,9 +313,17 @@ public class DefaultSystemSettingManager
             collect( Collectors.toList() );
     }
 
+
     @Override
     @Transactional
     public Map<String, Serializable> getSystemSettingsAsMap()
+    {
+        return getSystemSettingsAsMap( getCurrentUserLocale() );
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Serializable> getSystemSettingsAsMap(String locale)
     {
         final Map<String, Serializable> settingsMap = new HashMap<>();
 
@@ -297,7 +341,12 @@ public class DefaultSystemSettingManager
         {
             Serializable settingValue = systemSetting.getValue();
 
-            if ( settingValue == null )
+            if ( !systemSetting.getTranslations().isEmpty() )
+            {
+                settingValue = systemSetting.getTranslation( locale );
+
+            }
+            else if ( settingValue == null)
             {
                 Optional<SettingKey> setting = SettingKey.getByName( systemSetting.getName() );
 
@@ -307,21 +356,24 @@ public class DefaultSystemSettingManager
                 }
             }
 
+
+
             settingsMap.put( systemSetting.getName(), settingValue );
         }
 
         return settingsMap;
     }
 
+
     @Override
     @Transactional
-    public Map<String, Serializable> getSystemSettings( Collection<SettingKey> settings )
+    public Map<String, Serializable> getSystemSettings( Collection<SettingKey> settings, String locale )
     {
         Map<String, Serializable> map = new HashMap<>();
 
         for ( SettingKey setting : settings )
         {
-            Serializable value = getSystemSetting( setting );
+            Serializable value = getSystemSetting( setting, locale );
 
             if ( value != null )
             {

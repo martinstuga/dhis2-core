@@ -38,6 +38,7 @@ import org.hisp.dhis.calendar.CalendarService;
 import org.hisp.dhis.configuration.ConfigurationService;
 import org.hisp.dhis.setting.SettingKey;
 import org.hisp.dhis.setting.SystemSettingManager;
+import org.hisp.dhis.user.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.Sets;
@@ -81,6 +82,9 @@ public class SystemSettingInterceptor
     @Autowired
     private CalendarService calendarService;
 
+    @Autowired
+    private CurrentUserService currentUserService;
+
     // -------------------------------------------------------------------------
     // AroundInterceptor implementation
     // -------------------------------------------------------------------------
@@ -108,7 +112,7 @@ public class SystemSettingInterceptor
         map.put( SettingKey.SELF_REGISTRATION_NO_RECAPTCHA.getName(), systemSettingManager.selfRegistrationNoRecaptcha() );
         map.put( SYSPROP_PORTAL, defaultIfEmpty( System.getProperty( SYSPROP_PORTAL ), String.valueOf( false ) ) );
         
-        map.putAll( systemSettingManager.getSystemSettings( SETTINGS ) );
+        map.putAll( systemSettingManager.getSystemSettings( SETTINGS, currentUserService.getCurrentUser().getLanguages() ) );
         
         invocation.getStack().push( map );
 

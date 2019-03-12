@@ -28,7 +28,6 @@ package org.hisp.dhis.webapi.controller;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.apache.commons.lang3.StringUtils;
 import org.hisp.dhis.common.cache.CacheStrategy;
 import org.hisp.dhis.dxf2.webmessage.WebMessageUtils;
 import org.hisp.dhis.setting.SettingKey;
@@ -80,7 +79,7 @@ public class FileController
     {
         contextUtils.configureResponse( response, ContextUtils.CONTENT_TYPE_JAVASCRIPT, CacheStrategy.CACHE_TWO_WEEKS );
 
-        String content = (String) systemSettingManager.getSystemSetting( SettingKey.CUSTOM_JS, StringUtils.EMPTY );
+        String content = (String) systemSettingManager.getSystemSetting( SettingKey.CUSTOM_JS );
 
         writer.write( content );
     }
@@ -117,7 +116,7 @@ public class FileController
     {
         contextUtils.configureResponse( response, ContextUtils.CONTENT_TYPE_CSS, CacheStrategy.CACHE_TWO_WEEKS );
 
-        String content = (String) systemSettingManager.getSystemSetting( SettingKey.CUSTOM_CSS, StringUtils.EMPTY );
+        String content = (String) systemSettingManager.getSystemSetting( SettingKey.CUSTOM_CSS );
 
         writer.write( content );
     }
